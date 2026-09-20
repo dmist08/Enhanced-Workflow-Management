@@ -1,0 +1,28 @@
+# Node / Next.js
+node_modules/
+.next/
+out/
+build/
+.vercel
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv/
+
+# Environment Variables - Protect Secrets
+.env
+.env*.local
+**/.env
+**/.env.*
+!**/.env.example
+
+# OS
+.DS_Store
+Thumbs.db
