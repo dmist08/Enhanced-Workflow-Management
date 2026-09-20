@@ -24,7 +24,8 @@ def create_app():
     db.init_app(app)
 
     # CORS — allow frontend origin with credentials so the httpOnly cookie is sent
-    allowed_origins = [os.environ.get("FRONTEND_ORIGIN", "http://localhost:3000")]
+    raw_origins = os.environ.get("FRONTEND_ORIGIN", "http://localhost:3000")
+    allowed_origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
     CORS(
         app,
         origins=allowed_origins,
