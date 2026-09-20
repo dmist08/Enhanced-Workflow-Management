@@ -17,7 +17,11 @@ export default function LoginPage() {
     try {
       await login(email, password);
     } catch (err: any) {
-      setError(err.response?.data?.error ?? "Invalid credentials.");
+      if (!err.response) {
+        setError("Network error: Unable to reach backend API. Check CORS/connection.");
+      } else {
+        setError(err.response?.data?.error ?? "Invalid credentials.");
+      }
     } finally {
       setLoading(false);
     }

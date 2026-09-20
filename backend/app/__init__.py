@@ -24,11 +24,18 @@ def create_app():
     db.init_app(app)
 
     # CORS — allow frontend origin with credentials so the httpOnly cookie is sent
+    import re
     raw_origins = os.environ.get("FRONTEND_ORIGIN", "http://localhost:3000")
     allowed_origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
+    origin_patterns = [
+        re.compile(r"^https:\/\/.*\.vercel\.app$"),
+        re.compile(r"^http:\/\/localhost(:\d+)?$"),
+        re.compile(r"^http:\/\/127\.0\.0\.1(:\d+)?$"),
+    ] + allowed_origins
+
     CORS(
         app,
-        origins=allowed_origins,
+        origins=origin_patterns,
         supports_credentials=True,
     )
 
