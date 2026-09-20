@@ -9,81 +9,67 @@ Pravi is a construction & infrastructure project tracking platform built with a 
 ### Architecture Diagram
 ```mermaid
 flowchart TD
-    %% ── 1. USER ROLES ──
-    subgraph Users ["Actors & Personas"]
+    %% ── TIER 1: ACTORS (Horizontal) ──
+    subgraph USERS ["Actors & Roles"]
         direction LR
-        U1["Super Admin<br/>(Full System Access)"]
-        U2["Project Manager<br/>(Schedule & Approvals)"]
-        U3["Site Engineer<br/>(Inspection & Evidence)"]
-        U4["Contractor<br/>(Task Progress & Claims)"]
+        U1["Super Admin"]
+        U2["Project Manager"]
+        U3["Site Engineer"]
+        U4["Contractor"]
     end
 
-    %% ── 2. FRONTEND LAYER ──
-    subgraph Frontend ["Frontend Layer — Next.js 14 App Router (Vercel)"]
-        direction TB
-        AUTH_FE["Auth & Session Manager<br/>(LocalStorage + First-Party Cookie Sync)"]
-        SHELL["AppShell & Unified Sidebar<br/>(Role-Based Nav Guard & Active Route State)"]
+    %% ── TIER 2: FRONTEND PORTALS (Side by Side) ──
+    subgraph FE ["Frontend Layer — Next.js 14 App Router (Vercel)"]
+        direction LR
+        FE_ADMIN["Admin Portal<br/>Projects, Users & Escalations"]
+        FE_PM["PM Studio<br/>SVG DAG Graph, Gantt & Attribution"]
+        FE_FIELD["Field Operations<br/>Task Updates & GPS Photo Evidence"]
+    end
 
-        subgraph Modules ["Role Modules & Screens"]
+    %% ── TIER 3: BACKEND API & ENGINES (Side by Side) ──
+    subgraph BACKEND ["Backend Core — Flask 3 (Render)"]
+        direction LR
+        subgraph API ["Gateway & Integrity Gates"]
             direction TB
-            M_ADMIN["Admin Portal<br/>• Dashboard (Stats & Projects)<br/>• Projects & Users CRUD<br/>• Escalation Rules & Resolution"]
-            M_PM["PM Portal<br/>• Interactive SVG DAG Graph<br/>• Critical Path & Slack Matrix<br/>• SVG Gantt Chart<br/>• Delay Attribution Banner<br/>• Approvals Queue"]
-            M_FIELD["Field Operations (SE & Contractor)<br/>• Task Execution & Status<br/>• GPS Evidence Capture Uploader<br/>• Evidence Log (Geofence distance)"]
+            A1["REST API & JWT Auth"]
+            A2["Integrity Rules<br/>DFS Cycle Check · Evidence Gate"]
+            A1 --> A2
         end
 
-        AUTH_FE --> SHELL --> Modules
+        subgraph ENGINES ["Mathematical Engines (Pure Functions)"]
+            direction TB
+            E1["Propagation Engine<br/>Topological delay cascade"]
+            E2["Critical Path Engine (CPM)<br/>Earliest/latest dates & slack"]
+            E3["Attribution Engine<br/>Root-cause delay identification"]
+            E4["Geofence Engine<br/>Haversine GPS perimeter check"]
+        end
+
+        A2 <==>|Graph & Dates| ENGINES
     end
 
-    %% ── 3. API & SECURITY LAYER ──
-    subgraph BackendGateway ["API & Middleware Layer — Flask (Render)"]
-        direction TB
-        CORS["CORS Dynamic Filter<br/>(Regex for *.vercel.app + Localhost)"]
-        AUTH_BE["Auth Middleware (@require_auth)<br/>(JWT HS256 via Bearer Header or Cookie)"]
-        GATES["Pre-Write Security & Integrity Gates<br/>• DFS Cycle Rejection (400)<br/>• Evidence Completion Gate (409)<br/>• Escalation Justification Gate"]
-
-        CORS --> AUTH_BE --> GATES
-    end
-
-    %% ── 4. PURE ENGINE CORES ──
-    subgraph Engines ["Deterministic Pure-Function Engines (No DB I/O)"]
-        direction TB
-        E1["Propagation Engine<br/>Kahn's Topological Sort<br/>Cascades actual_end to projected dates"]
-        E2["Critical Path Engine (CPM)<br/>Forward/Backward Passes<br/>Computes slack_days & is_critical flag"]
-        E3["Attribution Engine<br/>Critical Path Backward Walk<br/>Names root-cause task & days late"]
-        E4["Geofence Engine<br/>Haversine Great-Circle Formula<br/>Enforces site perimeter (geo_verified)"]
-    end
-
-    %% ── 5. PERSISTENCE LAYER ──
-    subgraph Database ["Persistence Layer — PostgreSQL (Neon Serverless)"]
+    %% ── TIER 4: DATABASE (Single Clean Row) ──
+    subgraph DB ["Persistence — PostgreSQL (Neon Serverless)"]
         direction LR
-        T_USERS[("Users")]
-        T_PROJ[("Projects")]
-        T_TASKS[("Tasks<br/>(Engine-computed fields)")]
-        T_DEPS[("Dependencies<br/>(DAG edges)")]
-        T_EVID[("Evidence<br/>(Base64 + GPS)")]
-        T_APPR[("Approvals")]
-        T_ESCL[("Escalations & Rules")]
+        D1[("Projects · Tasks & DAG Dependencies · Evidence & GPS · Approvals · Escalations")]
     end
 
-    %% ── DATA FLOW CONNECTIONS ──
-    Users ==>|HTTPS / REST| Frontend
-    Modules ==>|Axios withCredentials + Bearer| BackendGateway
-    GATES -->|Passes Clean Graph & Data| Engines
-    Engines -->|Computes New Schedule| Database
-    GATES -->|CRUD Transactions| Database
+    %% ── FLOW ARROWS ──
+    USERS ==>|HTTPS| FE
+    FE ==>|JSON / REST + JWT Bearer| A1
+    A2 ==>|SQLAlchemy Transactions| D1
 
-    %% ── COMPONENT STYLING ──
+    %% ── STYLING ──
     classDef actor fill:#1e293b,stroke:#64748b,stroke-width:1.5px,color:#f8fafc;
-    classDef client fill:#0f172a,stroke:#3b82f6,stroke-width:1.5px,color:#f8fafc;
-    classDef api fill:#111827,stroke:#10b981,stroke-width:1.5px,color:#f8fafc;
-    classDef engine fill:#311042,stroke:#a855f7,stroke-width:1.5px,color:#f8fafc;
-    classDef storage fill:#064e3b,stroke:#059669,stroke-width:1.5px,color:#f8fafc;
+    classDef fe fill:#0f172a,stroke:#3b82f6,stroke-width:1.5px,color:#f8fafc;
+    classDef be fill:#111827,stroke:#10b981,stroke-width:1.5px,color:#f8fafc;
+    classDef eng fill:#2e1065,stroke:#a855f7,stroke-width:1.5px,color:#f8fafc;
+    classDef db fill:#064e3b,stroke:#059669,stroke-width:1.5px,color:#f8fafc;
 
     class U1,U2,U3,U4 actor;
-    class AUTH_FE,SHELL,M_ADMIN,M_PM,M_FIELD client;
-    class CORS,AUTH_BE,GATES api;
-    class E1,E2,E3,E4 engine;
-    class T_USERS,T_PROJ,T_TASKS,T_DEPS,T_EVID,T_APPR,T_ESCL storage;
+    class FE_ADMIN,FE_PM,FE_FIELD fe;
+    class A1,A2 be;
+    class E1,E2,E3,E4 eng;
+    class D1 db;
 ```
 
 ### Core Architecture Components
