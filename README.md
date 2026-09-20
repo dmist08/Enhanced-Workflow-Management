@@ -1,6 +1,27 @@
 # Pravi — Infrastructure Project Monitoring System
 
-Pravi is a construction & infrastructure project tracking platform built with a dependency-graph architecture, CPM engine, root cause attribution, and GPS geofence verification.
+Pravi is a dependency-graph-driven project monitoring platform built for large-scale infrastructure and construction projects. It replaces manual progress reports and static spreadsheets with an automated Critical Path Method (CPM) engine, deterministic delay attribution, and GPS geofence verification.
+
+---
+
+## Live Production Deployments
+
+| Component | Platform | Live URL | Status |
+|---|---|---|---|
+| **Frontend Web App** | Vercel | [https://enhanced-workflow-management-theta.vercel.app](https://enhanced-workflow-management-theta.vercel.app) | `Active` |
+| **Backend API** | Render | [https://enhanced-workflow-management-backend.onrender.com](https://enhanced-workflow-management-backend.onrender.com) | `Active` (Health: [`/health`](https://enhanced-workflow-management-backend.onrender.com/health)) |
+| **Database** | Neon Serverless | AWS Asia Pacific (Singapore) | `PostgreSQL 16` |
+
+---
+
+## Default Login Credentials
+
+| Role | Email | Password | Access Scope |
+|---|---|---|---|
+| **Super Admin** | `admin@pravi.dev` | `admin123` | Full access across Organization, PM Studio, and Field views |
+| **Project Manager** | `pm@pravi.dev` | `pm123` | Project schedules, dependency DAG, Gantt, approvals queue |
+| **Site Engineer** | `se@pravi.dev` | `se123` | Task execution, GPS evidence capture, evidence log |
+| **Contractor** | `contractor@pravi.dev` | `contractor123` | Assigned task updates, on-site proof, approval history |
 
 ---
 
@@ -72,29 +93,70 @@ flowchart TD
     class D1 db;
 ```
 
-### Core Architecture Components
-- **Backend:** Flask 3.x, SQLAlchemy, PostgreSQL (Neon Serverless), Gunicorn
-- **Frontend:** Next.js 14 (App Router, React 18, TypeScript, Tailwind CSS, TanStack Query)
-- **Engines (Pure Functions):**
-  - **Propagation Engine:** Kahn's topological sort cascading delays across dependency chains.
-  - **Critical Path Engine (CPM):** Forward & backward passes computing Earliest/Latest Start & Finish dates, slack days, and critical tasks (`is_critical`).
-  - **Attribution Engine:** Backward walk on critical paths identifying the exact task overrun or approval bottleneck causing delays.
-  - **Geofence Engine:** Haversine distance validation enforcing photo evidence within project site radius before task completion.
+---
+
+## Core Engines & Architectural Invariants
+
+The core differentiator of Pravi is that its scheduling, routing, and delay attribution engines are **deterministic pure functions** with zero database I/O inside the algorithm:
+
+1. **Propagation Engine (`backend/app/engines/propagation.py`)**:
+   - Uses Kahn’s Topological Sort (`O(V + E)`).
+   - Ground truth is anchored by `actual_end` on completed tasks.
+   - For downstream tasks: `projected_start = max(predecessor projected_ends)`.
+   - Any upstream slip cascades mathematically through every downstream dependent task.
+
+2. **Critical Path Engine (`backend/app/engines/critical_path.py`)**:
+   - Performs standard CPM Forward Pass ($ES, EF$) and Backward Pass ($LS, LF$).
+   - Calculates total float: $\text{slack\_days} = LS - ES$.
+   - Identifies critical path tasks (`is_critical = True`) where slack $\le 0$.
+
+3. **Root-Cause Attribution Engine (`backend/app/engines/attribution.py`)**:
+   - When a project slips (`projected_end > planned_end`), walks the critical path backward.
+   - Identifies whether the delay was driven by a **Task Overrun** or an **Approval Bottleneck**.
+   - Generates a human-readable one-line executive summary displayed on the PM dashboard banner.
+
+4. **Geofence Engine (`backend/app/engines/geofence.py`)**:
+   - Applies the Haversine spherical formula between device GPS coordinates and the project site center.
+   - Enforces geofence perimeter validation (`geo_verified = True/False`).
+
+### Hard Integrity Constraints
+- **Cycle Rejection (`400 Bad Request`)**: Circular dependencies ($A \to B \to C \to A$) are detected via DFS traversal and rejected before writing to the database.
+- **Evidence Gate (`409 Conflict`)**: A task cannot be marked `COMPLETED` without at least one geo-verified photographic evidence record.
+- **Justification Gate**: Resolving escalations requires a mandatory textual justification describing the remediation action.
+- **Cross-Domain Session Handshake**: Dual-mode authentication supporting both HttpOnly cookies and `Authorization: Bearer <token>` with dynamic CORS origin matching for `*.vercel.app`.
 
 ---
 
-## Default Login Credentials
+## Production Deployment Architecture
 
-| Role | Email | Password |
-|---|---|---|
-| **Admin** (Super Admin) | `admin@pravi.dev` | `admin123` |
-| **Project Manager** | `pm@pravi.dev` | `pm123` |
-| **Site Engineer** | `se@pravi.dev` | `se123` |
-| **Contractor** | `contractor@pravi.dev` | `contractor123` |
+### 1. Backend Service (Render)
+- **Repository**: `dmist08/Enhanced-Workflow-Management`
+- **Root Directory**: `backend`
+- **Runtime**: `Python 3`
+- **Build Command**: `pip install -r requirements.txt`
+- **Start Command**: `gunicorn run:app --bind 0.0.0.0:$PORT --workers 2`
+- **Environment Variables**:
+  - `DATABASE_URL`: Neon PostgreSQL connection URI
+  - `JWT_SECRET`: HS256 secret key
+  - `FLASK_ENV`: `production`
+  - `FRONTEND_ORIGIN`: Allowed origin regex pattern (supports all `*.vercel.app` domains and local dev)
+
+### 2. Frontend Application (Vercel)
+- **Framework Preset**: `Next.js`
+- **Root Directory**: `frontend`
+- **Build Command**: `next build`
+- **Output Directory**: Default (`.next`)
+- **Environment Variables**:
+  - `NEXT_PUBLIC_API_URL`: `https://enhanced-workflow-management-backend.onrender.com`
 
 ---
 
 ## Local Development Setup
+
+### Prerequisites
+- Node.js ≥ 18
+- Python ≥ 3.11
+- PostgreSQL connection string (e.g. Neon)
 
 ### 1. Backend Setup
 ```bash
@@ -102,23 +164,23 @@ cd backend
 python -m pip install -r requirements.txt
 ```
 
-Configure `backend/.env`:
+Create `backend/.env`:
 ```env
-DATABASE_URL=postgresql://neondb_owner:npg_et6yIHPnmEW1@ep-crimson-grass-b3c46he8-pooler.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
-JWT_SECRET=super-secret-jwt-key
+DATABASE_URL=postgresql://neondb_owner:...@ep-...aws.neon.tech/neondb?sslmode=require
+JWT_SECRET=your-secret-key
 FRONTEND_ORIGIN=http://localhost:3000
 FLASK_ENV=development
 ```
 
-Seed Database:
+Seed Database with initial projects, critical paths, and test users:
 ```bash
 python seed.py
 ```
 
-Run Backend Server:
+Start Backend Server:
 ```bash
 python run.py
-# Runs on http://localhost:5000
+# Running on http://127.0.0.1:5000
 ```
 
 ### 2. Frontend Setup
@@ -127,33 +189,13 @@ cd frontend
 npm install
 ```
 
-Configure `frontend/.env.local`:
+Create `frontend/.env.local`:
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:5000
 ```
 
-Run Next.js Dev Server:
+Start Next.js Dev Server:
 ```bash
 npm run dev
-# Runs on http://localhost:3000
+# Running on http://localhost:3000
 ```
-
----
-
-## Production Deployment
-
-### Backend (Fly.io)
-1. Install `flyctl` CLI.
-2. Inside `/backend`:
-   ```bash
-   fly launch
-   fly secrets set DATABASE_URL="postgresql://..." JWT_SECRET="..." FRONTEND_ORIGIN="https://your-frontend.vercel.app" FLASK_ENV="production"
-   fly deploy
-   ```
-
-### Frontend (Vercel)
-1. Push repository to GitHub.
-2. In Vercel, set root directory to `frontend`.
-3. Set environment variable:
-   - `NEXT_PUBLIC_API_URL` = `https://your-backend.fly.dev`
-4. Deploy.
