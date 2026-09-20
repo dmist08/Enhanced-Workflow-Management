@@ -32,8 +32,17 @@ def create_app():
         supports_credentials=True,
     )
 
-    # Health check endpoint for uptime monitoring & Fly.io deployment
-    @app.route("/health", methods=["GET"])
+    # Root welcome & health endpoints
+    @app.route("/", methods=["GET", "HEAD"])
+    def index():
+        return jsonify({
+            "service": "Pravi Infrastructure Monitoring API",
+            "status": "online",
+            "version": "1.0.0",
+            "health": "/health",
+        }), 200
+
+    @app.route("/health", methods=["GET", "HEAD"])
     def health():
         return jsonify({"status": "ok", "service": "pravi-backend"}), 200
 
