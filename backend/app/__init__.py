@@ -43,7 +43,7 @@ def create_app():
     @app.route("/", methods=["GET", "HEAD"])
     def index():
         return jsonify({
-            "service": "Pravi Infrastructure Monitoring API",
+            "service": "Enhanced Workflow Management API",
             "status": "online",
             "version": "1.0.0",
             "health": "/health",
@@ -51,7 +51,7 @@ def create_app():
 
     @app.route("/health", methods=["GET", "HEAD"])
     def health():
-        return jsonify({"status": "ok", "service": "pravi-backend"}), 200
+        return jsonify({"status": "ok", "service": "workflow-mgmt-backend"}), 200
 
     # Blueprints
     from .routes.auth import auth_bp

@@ -7,7 +7,7 @@ import ReactQueryProvider from "@/components/ReactQueryProvider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Pravi — Construction Project Monitor",
+  title: "Enhanced Workflow Management — Infrastructure Project Monitor",
   description: "Infrastructure project tracking with dependency-graph and critical path analysis",
 };
 

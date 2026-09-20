@@ -107,10 +107,10 @@ export default function Sidebar() {
       {/* Brand Header */}
       <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2.5">
         <div className="w-7 h-7 rounded bg-gray-900 flex items-center justify-center text-white font-bold text-xs tracking-wider">
-          P
+          WM
         </div>
         <div>
-          <p className="text-sm font-semibold text-gray-900 tracking-tight leading-none">Pravi</p>
+          <p className="text-sm font-semibold text-gray-900 tracking-tight leading-none">Workflow Mgmt</p>
           <p className="text-[10px] text-gray-400 tracking-wide mt-1">Infrastructure Monitor</p>
         </div>
       </div>

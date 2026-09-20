@@ -31,7 +31,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="w-full max-w-sm">
         <div className="mb-8">
-          <p className="text-xs uppercase tracking-widest text-gray-400 mb-1">Pravi</p>
+          <p className="text-xs uppercase tracking-widest text-gray-400 mb-1">Enhanced Workflow Management</p>
           <h1 className="text-xl font-semibold text-gray-900">Sign in</h1>
         </div>
 

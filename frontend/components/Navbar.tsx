@@ -15,7 +15,7 @@ export default function Navbar() {
   return (
     <header className="border-b border-gray-200 bg-white">
       <div className="mx-auto flex h-12 max-w-7xl items-center justify-between px-6">
-        <span className="text-sm font-semibold text-gray-900 tracking-tight">Pravi</span>
+        <span className="text-sm font-semibold text-gray-900 tracking-tight">Workflow Management</span>
         {user && (
           <div className="flex items-center gap-6">
             <div className="text-right">

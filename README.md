@@ -1,6 +1,6 @@
-# Pravi — Infrastructure Project Monitoring System
+# Enhanced Workflow Management — Infrastructure Project Monitoring System
 
-Pravi is a dependency-graph-driven project monitoring platform built for large-scale infrastructure and construction projects. It replaces manual progress reports and static spreadsheets with an automated Critical Path Method (CPM) engine, deterministic delay attribution, and GPS geofence verification.
+Enhanced Workflow Management is a dependency-graph-driven project monitoring platform built for large-scale infrastructure and construction projects. It replaces manual progress reports and static spreadsheets with an automated Critical Path Method (CPM) engine, deterministic delay attribution, and GPS geofence verification.
 
 ---
 
@@ -131,7 +131,7 @@ flowchart TD
 
 ## Core Engines & Architectural Invariants
 
-The core differentiator of Pravi is that its scheduling, routing, and delay attribution engines are **deterministic pure functions** with zero database I/O inside the algorithm:
+The core differentiator of the platform is that its scheduling, routing, and delay attribution engines are **deterministic pure functions** with zero database I/O inside the algorithm:
 
 1. **Propagation Engine (`backend/app/engines/propagation.py`)**:
    - Uses Kahn’s Topological Sort (`O(V + E)`).
@@ -185,6 +185,11 @@ FLASK_ENV=development
 Seed Database with initial projects, critical paths, and test users:
 ```bash
 python seed.py
+```
+
+Run Automated Engine Unit Tests:
+```bash
+python -m unittest discover tests
 ```
 
 Start Backend Server:
