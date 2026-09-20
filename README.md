@@ -127,30 +127,6 @@ The core differentiator of Pravi is that its scheduling, routing, and delay attr
 
 ---
 
-## Production Deployment Architecture
-
-### 1. Backend Service (Render)
-- **Repository**: `dmist08/Enhanced-Workflow-Management`
-- **Root Directory**: `backend`
-- **Runtime**: `Python 3`
-- **Build Command**: `pip install -r requirements.txt`
-- **Start Command**: `gunicorn run:app --bind 0.0.0.0:$PORT --workers 2`
-- **Environment Variables**:
-  - `DATABASE_URL`: Neon PostgreSQL connection URI
-  - `JWT_SECRET`: HS256 secret key
-  - `FLASK_ENV`: `production`
-  - `FRONTEND_ORIGIN`: Allowed origin regex pattern (supports all `*.vercel.app` domains and local dev)
-
-### 2. Frontend Application (Vercel)
-- **Framework Preset**: `Next.js`
-- **Root Directory**: `frontend`
-- **Build Command**: `next build`
-- **Output Directory**: Default (`.next`)
-- **Environment Variables**:
-  - `NEXT_PUBLIC_API_URL`: `https://enhanced-workflow-management-backend.onrender.com`
-
----
-
 ## Local Development Setup
 
 ### Prerequisites
