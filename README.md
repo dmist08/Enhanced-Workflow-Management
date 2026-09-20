@@ -18,10 +18,44 @@ Pravi is a dependency-graph-driven project monitoring platform built for large-s
 
 | Role | Email | Password | Access Scope |
 |---|---|---|---|
-| **Super Admin** | `admin@pravi.dev` | `admin123` | Full access across Organization, PM Studio, and Field views |
-| **Project Manager** | `pm@pravi.dev` | `pm123` | Project schedules, dependency DAG, Gantt, approvals queue |
-| **Site Engineer** | `se@pravi.dev` | `se123` | Task execution, GPS evidence capture, evidence log |
-| **Contractor** | `contractor@pravi.dev` | `contractor123` | Assigned task updates, on-site proof, approval history |
+| **Super Admin** | `admin@projectmgmt.dev` | `admin123` | Full system governance, project creation, user management, escalation resolution |
+| **Project Manager** | `pm@projectmgmt.dev` | `pm123` | Project scheduling, dependency DAG, Gantt CPM tracking, approvals decisioning |
+| **Site Engineer** | `se@projectmgmt.dev` | `se123` | Field task execution, GPS geofenced evidence capture, approval requests |
+| **Contractor** | `contractor@projectmgmt.dev` | `contractor123` | Work parcel execution, field photo uploads, approval submission tracking |
+
+---
+
+## Organizational Hierarchy & Role Governance
+
+The platform operates on a strict 4-level functional hierarchy designed to enforce segregation of duties between executive governance, schedule control, quality inspection, and physical execution:
+
+```
+[ Level 1: Super Admin ]
+       │  (Global governance, project creation, user provisioning, escalation arbitration)
+       ▼
+[ Level 2: Project Manager ]
+       │  (CPM scheduling, dependency DAGs, delay attribution, approval decisions)
+       ▼
+[ Level 3: Site Engineer ]
+       │  (Field supervision, GPS-verified evidence compliance, inspection sign-offs)
+       ▼
+[ Level 4: Contractor ]
+          (Physical execution, task updates, progress evidence submission)
+```
+
+### Role Access & Capability Matrix
+
+| Operational Capability | Level 1: Super Admin | Level 2: Project Manager | Level 3: Site Engineer | Level 4: Contractor |
+|---|:---:|:---:|:---:|:---:|
+| **Create & Configure Projects** (site GPS, geofence radius, budget) | :white_check_mark: | :x: | :x: | :x: |
+| **User Lifecycle & Role Assignment** | :white_check_mark: | :x: | :x: | :x: |
+| **Escalation Rules & Mandatory Justification Resolution** | :white_check_mark: | :x: | :x: | :x: |
+| **Dependency DAG & CPM Scheduling** (Kahn's topo sort, float analysis) | :white_check_mark: | :white_check_mark: | :x: | :x: |
+| **Root-Cause Delay Attribution Dashboard** | :white_check_mark: | :white_check_mark: | :x: | :x: |
+| **Task Approval Decisioning** (Approve / Reject with remarks) | :white_check_mark: | :white_check_mark: | :x: | :x: |
+| **Submit Approval Requests** | :x: | :x: | :white_check_mark: | :white_check_mark: |
+| **GPS Geofence Evidence Upload** (Haversine site proximity check) | :x: | :x: | :white_check_mark: | :white_check_mark: |
+| **Complete Task** *(Enforced by Evidence Gate: requires ≥1 verified photo)* | :x: | :x: | :white_check_mark: | :white_check_mark: |
 
 ---
 

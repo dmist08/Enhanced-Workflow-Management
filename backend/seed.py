@@ -49,13 +49,13 @@ def seed():
 
         # ── Users ──────────────────────────────────────────────────────────────
         print("👤 Creating users...")
-        admin = User(id=_uuid(), name="Arjun Mehta", email="admin@pravi.dev",
+        admin = User(id=_uuid(), name="Arjun Mehta", email="admin@projectmgmt.dev",
                      password_hash=hashpw("admin123"), role="ADMIN")
-        pm = User(id=_uuid(), name="Priya Sharma", email="pm@pravi.dev",
+        pm = User(id=_uuid(), name="Priya Sharma", email="pm@projectmgmt.dev",
                   password_hash=hashpw("pm123"), role="PROJECT_MANAGER")
-        se = User(id=_uuid(), name="Rohan Kulkarni", email="se@pravi.dev",
+        se = User(id=_uuid(), name="Rohan Kulkarni", email="se@projectmgmt.dev",
                   password_hash=hashpw("se123"), role="SITE_ENGINEER")
-        contractor = User(id=_uuid(), name="Deepak Patel", email="contractor@pravi.dev",
+        contractor = User(id=_uuid(), name="Deepak Patel", email="contractor@projectmgmt.dev",
                           password_hash=hashpw("contractor123"), role="CONTRACTOR")
         db.session.add_all([admin, pm, se, contractor])
         db.session.flush()
