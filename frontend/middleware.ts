@@ -1,4 +1,4 @@
-// middleware.ts — Next.js Edge middleware for auth + role-based routing
+// middleware.ts — Next.js Edge middleware for role-based routing
 import { NextRequest, NextResponse } from "next/server";
 import { jwtDecode } from "jwt-decode";
 
@@ -26,7 +26,7 @@ const ROLE_DASHBOARDS: Record<string, string> = {
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Skip public paths
+  // Skip public paths and static assets
   if (
     pathname.startsWith("/login") ||
     pathname.startsWith("/_next") ||
@@ -38,42 +38,44 @@ export function middleware(req: NextRequest) {
 
   const token = req.cookies.get("session_token")?.value;
 
-  if (!token) {
-    return NextResponse.redirect(new URL("/login", req.url));
-  }
+  // If edge has a valid session token, enforce role boundaries
+  if (token) {
+    try {
+      const payload = jwtDecode<JwtPayload>(token);
+      if (payload.exp * 1000 > Date.now()) {
+        const role = payload.role;
+        const allowedPrefixes = ROLE_PREFIXES[role] ?? [];
+        const isProtectedRoute =
+          pathname.startsWith("/admin") ||
+          pathname.startsWith("/pm") ||
+          pathname.startsWith("/se") ||
+          pathname.startsWith("/contractor");
 
-  let payload: JwtPayload;
-  try {
-    payload = jwtDecode<JwtPayload>(token);
-    if (payload.exp * 1000 < Date.now()) {
-      return NextResponse.redirect(new URL("/login", req.url));
-    }
-  } catch {
-    return NextResponse.redirect(new URL("/login", req.url));
-  }
-
-  const role = payload.role;
-  const allowedPrefixes = ROLE_PREFIXES[role] ?? [];
-
-  // Check if the current path starts with any allowed prefix
-  const isProtectedRoute =
-    pathname.startsWith("/admin") ||
-    pathname.startsWith("/pm") ||
-    pathname.startsWith("/se") ||
-    pathname.startsWith("/contractor");
-
-  if (isProtectedRoute) {
-    const allowed = allowedPrefixes.some((prefix) => pathname.startsWith(prefix));
-    if (!allowed) {
-      return NextResponse.redirect(new URL(ROLE_DASHBOARDS[role] ?? "/login", req.url));
+        if (isProtectedRoute) {
+          const allowed = allowedPrefixes.some((prefix) => pathname.startsWith(prefix));
+          if (!allowed) {
+            return NextResponse.redirect(new URL(ROLE_DASHBOARDS[role] ?? "/login", req.url));
+          }
+        }
+      }
+    } catch {
+      // Invalid token cookie — let client AppShell / useAuth handle rehydration or redirect
     }
   }
 
-  // Root "/" redirect
+  // Root redirect
   if (pathname === "/") {
-    return NextResponse.redirect(new URL(ROLE_DASHBOARDS[role] ?? "/login", req.url));
+    if (token) {
+      try {
+        const payload = jwtDecode<JwtPayload>(token);
+        return NextResponse.redirect(new URL(ROLE_DASHBOARDS[payload.role] ?? "/login", req.url));
+      } catch {}
+    }
+    return NextResponse.redirect(new URL("/login", req.url));
   }
 
+  // For protected routes where cookie is not yet at edge (e.g. cross-domain SPA hydration),
+  // allow the page to render so AppShell / useAuth verifies auth via localStorage & /auth/me
   return NextResponse.next();
 }
 

@@ -76,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       document.cookie = `session_token=${res.data.token}; path=/; max-age=86400; SameSite=Lax; Secure`;
     }
 
-    router.push(dashboardPathForRole(res.data.role));
+    window.location.href = dashboardPathForRole(res.data.role);
   }
 
   async function logout() {
