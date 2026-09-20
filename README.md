@@ -9,95 +9,81 @@ Pravi is a construction & infrastructure project tracking platform built with a 
 ### Architecture Diagram
 ```mermaid
 flowchart TD
-    %% ── USER / STAKEHOLDER PERSONAS ──
-    subgraph Stakeholders ["Stakeholders & Personas"]
-        U1["Ministry (CMO)"]
-        U2["Finance Head"]
-        U3["R&B / PWD Head"]
-        U4["Tender Cell"]
-        U5["Site Engineer"]
-        U6["Super Admin"]
+    %% ── 1. USER ROLES ──
+    subgraph Users ["Actors & Personas"]
+        direction LR
+        U1["Super Admin<br/>(Full System Access)"]
+        U2["Project Manager<br/>(Schedule & Approvals)"]
+        U3["Site Engineer<br/>(Inspection & Evidence)"]
+        U4["Contractor<br/>(Task Progress & Claims)"]
     end
 
-    %% ── PRESENTATION LAYER ──
-    subgraph Frontend ["Presentation Layer — Next.js 14 (App Router)"]
-        WA["Web App (Next.js)"]
-        subgraph Views ["RBAC Modular Views"]
-            V1["Project Passport & DAG"]
-            V2["Dept Inbox & Approvals"]
-            V3["Escalations & Root Cause"]
-            V4["Official Chat & Minutes"]
-            V5["Reports & CPM Gantt"]
+    %% ── 2. FRONTEND LAYER ──
+    subgraph Frontend ["Frontend Layer — Next.js 14 App Router (Vercel)"]
+        direction TB
+        AUTH_FE["Auth & Session Manager<br/>(LocalStorage + First-Party Cookie Sync)"]
+        SHELL["AppShell & Unified Sidebar<br/>(Role-Based Nav Guard & Active Route State)"]
+
+        subgraph Modules ["Role Modules & Screens"]
+            direction TB
+            M_ADMIN["Admin Portal<br/>• Dashboard (Stats & Projects)<br/>• Projects & Users CRUD<br/>• Escalation Rules & Resolution"]
+            M_PM["PM Portal<br/>• Interactive SVG DAG Graph<br/>• Critical Path & Slack Matrix<br/>• SVG Gantt Chart<br/>• Delay Attribution Banner<br/>• Approvals Queue"]
+            M_FIELD["Field Operations (SE & Contractor)<br/>• Task Execution & Status<br/>• GPS Evidence Capture Uploader<br/>• Evidence Log (Geofence distance)"]
         end
-        WA --- Views
+
+        AUTH_FE --> SHELL --> Modules
     end
 
-    %% ── API GATEWAY & AUTH LAYER ──
-    subgraph Gateway ["API Gateway & Security Layer"]
-        AGW["API Gateway + Auth Engine<br/>(JWT HttpOnly/Bearer · Role & Dept Scopes · Audit Middleware)"]
+    %% ── 3. API & SECURITY LAYER ──
+    subgraph BackendGateway ["API & Middleware Layer — Flask (Render)"]
+        direction TB
+        CORS["CORS Dynamic Filter<br/>(Regex for *.vercel.app + Localhost)"]
+        AUTH_BE["Auth Middleware (@require_auth)<br/>(JWT HS256 via Bearer Header or Cookie)"]
+        GATES["Pre-Write Security & Integrity Gates<br/>• DFS Cycle Rejection (400)<br/>• Evidence Completion Gate (409)<br/>• Escalation Justification Gate"]
+
+        CORS --> AUTH_BE --> GATES
     end
 
-    %% ── CORE DOMAIN SERVICES & ENGINES ──
-    subgraph Services ["Core Engines & Micro-Modules"]
-        S1["Workflow Engine<br/>(Dependency DAG, State Machine, Geo-Gating)"]
-        S2["SLA Scheduler<br/>(CPM Forward/Backward Pass, Breach Detection)"]
-        S3["Escalation & Decision Service<br/>(Root-Cause Attribution, Justification Gate)"]
-        S4["Official Chat Service<br/>(Formal Logs, Query Threads)"]
-        S5["Notifications Service<br/>(Email / SMS / In-App Alerts)"]
-        S6["AI Service Engine<br/>(Predictive Delays, Decision Drafts)"]
+    %% ── 4. PURE ENGINE CORES ──
+    subgraph Engines ["Deterministic Pure-Function Engines (No DB I/O)"]
+        direction TB
+        E1["Propagation Engine<br/>Kahn's Topological Sort<br/>Cascades actual_end to projected dates"]
+        E2["Critical Path Engine (CPM)<br/>Forward/Backward Passes<br/>Computes slack_days & is_critical flag"]
+        E3["Attribution Engine<br/>Critical Path Backward Walk<br/>Names root-cause task & days late"]
+        E4["Geofence Engine<br/>Haversine Great-Circle Formula<br/>Enforces site perimeter (geo_verified)"]
     end
 
-    %% ── PERSISTENCE & EXTERNAL INTEGRATIONS ──
-    subgraph Persistence ["Persistence & Storage Layer"]
-        DB[("PostgreSQL (Neon)<br/>projects · tasks · dependencies · sla_events<br/>evidence · approvals · escalations · audit")]
-        OBJ[("Object Storage (S3 / R2)<br/>site photos · technical drawings · MB documents")]
-        AUDIT[("Audit Log<br/>(Append-Only Event Ledger)")]
+    %% ── 5. PERSISTENCE LAYER ──
+    subgraph Database ["Persistence Layer — PostgreSQL (Neon Serverless)"]
+        direction LR
+        T_USERS[("Users")]
+        T_PROJ[("Projects")]
+        T_TASKS[("Tasks<br/>(Engine-computed fields)")]
+        T_DEPS[("Dependencies<br/>(DAG edges)")]
+        T_EVID[("Evidence<br/>(Base64 + GPS)")]
+        T_APPR[("Approvals")]
+        T_ESCL[("Escalations & Rules")]
     end
 
-    subgraph External ["External Intelligence"]
-        LLM["LLM Provider<br/>(Claude 3.5 Sonnet / Gemini 1.5 Pro)"]
-    end
+    %% ── DATA FLOW CONNECTIONS ──
+    Users ==>|HTTPS / REST| Frontend
+    Modules ==>|Axios withCredentials + Bearer| BackendGateway
+    GATES -->|Passes Clean Graph & Data| Engines
+    Engines -->|Computes New Schedule| Database
+    GATES -->|CRUD Transactions| Database
 
-    %% ── CONNECTIONS ──
-    Stakeholders ==>|HTTPS / WSS| WA
-    WA ==>|JSON / REST| AGW
+    %% ── COMPONENT STYLING ──
+    classDef actor fill:#1e293b,stroke:#64748b,stroke-width:1.5px,color:#f8fafc;
+    classDef client fill:#0f172a,stroke:#3b82f6,stroke-width:1.5px,color:#f8fafc;
+    classDef api fill:#111827,stroke:#10b981,stroke-width:1.5px,color:#f8fafc;
+    classDef engine fill:#311042,stroke:#a855f7,stroke-width:1.5px,color:#f8fafc;
+    classDef storage fill:#064e3b,stroke:#059669,stroke-width:1.5px,color:#f8fafc;
 
-    AGW -->|Route & Authorize| S1
-    AGW -->|Route & Authorize| S2
-    AGW -->|Route & Authorize| S3
-    AGW -->|Route & Authorize| S4
-    AGW -->|Route & Authorize| S5
-    AGW -->|Route & Authorize| S6
-
-    S1 -->|Read / Write| DB
-    S2 -->|Schedule & Evaluate| DB
-    S3 -->|Query & Resolve| DB
-    S4 -->|Store Messages| DB
-    S5 -->|Dispatch Events| DB
-
-    S1 -.->|Store Evidence| OBJ
-    S3 -.->|Log Decisions| AUDIT
-    AGW -.->|Access Log| AUDIT
-
-    S6 <==>|Inference & Summary| LLM
-    S6 -.->|Fetch Historical Metrics| DB
-
-    %% ── STYLING ──
-    classDef persona fill:#3b2d54,stroke:#7c3aed,stroke-width:1.5px,color:#fff;
-    classDef presentation fill:#1e3a8a,stroke:#3b82f6,stroke-width:1.5px,color:#fff;
-    classDef gateway fill:#0f766e,stroke:#14b8a6,stroke-width:2px,color:#fff;
-    classDef service fill:#78350f,stroke:#f59e0b,stroke-width:1.5px,color:#fff;
-    classDef aiService fill:#1e293b,stroke:#818cf8,stroke-width:2px,color:#fff;
-    classDef db fill:#064e3b,stroke:#10b981,stroke-width:1.5px,color:#fff;
-    classDef ext fill:#312e81,stroke:#6366f1,stroke-width:1.5px,color:#fff;
-
-    class U1,U2,U3,U4,U5,U6 persona;
-    class WA,V1,V2,V3,V4,V5 presentation;
-    class AGW gateway;
-    class S1,S2,S3,S4,S5 service;
-    class S6 aiService;
-    class DB,OBJ,AUDIT db;
-    class LLM ext;
+    class U1,U2,U3,U4 actor;
+    class AUTH_FE,SHELL,M_ADMIN,M_PM,M_FIELD client;
+    class CORS,AUTH_BE,GATES api;
+    class E1,E2,E3,E4 engine;
+    class T_USERS,T_PROJ,T_TASKS,T_DEPS,T_EVID,T_APPR,T_ESCL storage;
 ```
 
 ### Core Architecture Components
