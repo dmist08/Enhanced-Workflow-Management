@@ -49,6 +49,7 @@ def login():
         "name": user.name,
         "email": user.email,
         "role": user.role,
+        "token": token,
     })
 
     # Set httpOnly cookie — JS cannot read this, preventing XSS theft

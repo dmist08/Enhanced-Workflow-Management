@@ -25,6 +25,11 @@ def require_auth(roles: list[str] | None = None):
         @wraps(fn)
         def wrapper(*args, **kwargs):
             token = request.cookies.get("session_token")
+            if not token and request.headers.get("Authorization"):
+                auth_header = request.headers.get("Authorization")
+                if auth_header.startswith("Bearer "):
+                    token = auth_header.split(" ", 1)[1]
+
             if not token:
                 return unauthorized("Authentication required.")
 

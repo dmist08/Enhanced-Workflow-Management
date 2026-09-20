@@ -8,4 +8,15 @@ const api = axios.create({
   },
 });
 
+// Attach Authorization header from localStorage if available (supports cross-domain setups)
+api.interceptors.request.use((config) => {
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("session_token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return config;
+});
+
 export default api;
